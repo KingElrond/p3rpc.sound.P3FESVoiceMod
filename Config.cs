@@ -29,8 +29,7 @@ namespace p3rpc.sound.P3FESVoiceMod.Configuration
         [Description("This is a bool.")]
         [DefaultValue(true)]
         public bool Boolean { get; set; } = true;
-        */
-
+        
         [DisplayName("NOT_IMPLEMENTED_Yet")]
         [Description("Yukari Takeba Voice Replacement Options")]
         [DefaultValue(SampleEnum.Default)]
@@ -43,6 +42,8 @@ namespace p3rpc.sound.P3FESVoiceMod.Configuration
             Default,
             FUTURETHING
         }
+         
+         */
 
         [DisplayName("Volume Slider")]
         [Description("This is a volume control slider.")]

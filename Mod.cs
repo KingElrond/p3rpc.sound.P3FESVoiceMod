@@ -2,9 +2,12 @@
 using p3rpc.sound.P3FESVoiceMod.Template;
 using Reloaded.Hooks.ReloadedII.Interfaces;
 using Reloaded.Mod.Interfaces;
+using System.IO;
+/*
 using Reloaded.Mod.Loader.IO;
 using Reloaded.Mod.Loader.IO.Config;
 using Reloaded.Mod.Loader.IO.Utility;
+*/
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 
@@ -68,38 +71,22 @@ namespace p3rpc.sound.P3FESVoiceMod
         #region Standard Overrides
         public override void ConfigurationUpdated(Config configuration)
         {
+            
             // Apply settings from configuration.
             // ... your code here.
             _configuration = configuration;
             _logger.WriteLine($"[{_modConfig.ModId}] Config Updated: Applying");
-            var configIO = IConfig<LoaderConfig>.FromPathOrDefault(Paths.LoaderConfigPath);
-            var LauncherPath = Paths.GetLoaderFolder64(configIO.LauncherPath);
-            var ParentFolderPath = Directory.GetParent(Directory.GetParent(LauncherPath).FullName).FullName;
-            var ModFolderPath = Path.Combine(Path.Combine(ParentFolderPath, "Mods"), "p3rpc.sound.P3FESVoiceMod");
-            var RyoP3RFolderPath = Path.Combine(Path.Combine(ModFolderPath, "Ryo"), "P3R");
-            var configFilePath = Path.Combine(RyoP3RFolderPath, "config.yaml");
+            
+            var modDir = _modLoader.GetDirectoryForModId(_modConfig.ModId);
+            var yamlFilePath = Path.Join(modDir, "Ryo", "P3R", "config.yaml");
 
-            // Try to open the config.yaml file stream
-            String yamlContent;
-            using (var fileStream = IOEx.TryOpenOrCreateFileStream(configFilePath, FileMode.Open, FileAccess.Read))
-            {
-                if (fileStream == null)
-                {
-                    Console.WriteLine("Failed to open config.yaml file.");
-                    return;
-                }
-
-                using (var reader = new StreamReader(fileStream))
-                {
-                    yamlContent = reader.ReadToEnd();
-                }
-            }
-
-            // Deserialize YAML content to a dictionary
+            // Read Yaml file
+            var yamlText = File.ReadAllText(yamlFilePath);
+            // Deserialize
             var deserializer = new DeserializerBuilder()
-                .WithNamingConvention(CamelCaseNamingConvention.Instance)
+                .WithNamingConvention(UnderscoredNamingConvention.Instance)
                 .Build();
-            var yamlObject = deserializer.Deserialize<Dictionary<string, object>>(yamlContent);
+            var yamlObject = deserializer.Deserialize<Dictionary<string, object>>(yamlText);
 
             // Modify the volume parameter
             if (yamlObject.TryGetValue("volume", out var volumeValue))
@@ -108,32 +95,18 @@ namespace p3rpc.sound.P3FESVoiceMod
             }
             else
             {
-                Console.WriteLine("Volume parameter not found in config.yaml file.");
+                _logger.WriteLine("Volume parameter not found in config.yaml file.");
                 return;
             }
 
             // Serialize the modified YAML content
             var serializer = new SerializerBuilder()
-                .WithNamingConvention(CamelCaseNamingConvention.Instance)
+                .WithNamingConvention(UnderscoredNamingConvention.Instance)
                 .Build();
             var modifiedYamlContent = serializer.Serialize(yamlObject);
+            File.WriteAllText(yamlFilePath, modifiedYamlContent);
 
-            // Write the modified YAML content back to the config.yaml file
-            using (var fileStream = IOEx.TryOpenOrCreateFileStream(configFilePath, FileMode.Create, FileAccess.Write))
-            {
-                if (fileStream == null)
-                {
-                    Console.WriteLine("Failed to open config.yaml file for writing.");
-                    return;
-                }
-
-                using (var writer = new StreamWriter(fileStream))
-                {
-                    writer.Write(modifiedYamlContent);
-                }
-            }
-
-            Console.WriteLine("Volume parameter updated successfully.");
+            _logger.WriteLine("Volume parameter updated successfully.");
         }
         #endregion
 
